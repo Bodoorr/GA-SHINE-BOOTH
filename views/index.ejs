@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <title>GA-ShineBooth</title>
+  </head>
+  <body>
+    <div class="main">
+      <div class="left-section">
+        <div class="stickers">
+          <img src="/stickers/3.png" alt="GA-red" draggable="true" />
+          <img src="/stickers/4.png" alt="pc" draggable="true" />
+          <img src="/stickers/5.png" alt="GA-black" draggable="true" />
+          <img src="/stickers/6.png" alt="SE" draggable="true" />
+          <img src="/stickers/7.png" alt="turtle" draggable="true" />
+          <img src="/stickers/8.png" alt="kitty" draggable="true" />
+          <img src="/stickers/9.png" alt="rose" draggable="true" />
+          <img src="/stickers/10.png" alt="mouse" draggable="true" />
+        </div>
+
+        <div class="videos"></div>
+      </div>
+
+      <div class="right-section">
+        <h1>Welcome to GA Shine Booth</h1>
+        <div class="button-group">
+          <button id="capture">Capture</button>
+          <button id="save">Save</button>
+        </div>
+        <img src="app.png" alt="app" />
+        <img src="photo.png" alt="photo" />
+        <div class="message" id="uploadMessage"></div>
+      </div>
+    </div>
+
+    <script>
+      const videosContainer = document.querySelector('.videos')
+      const captureButton = document.querySelector('#capture')
+      const saveButton = document.querySelector('#save')
+
+      const videos = []
+
+      for (let i = 0; i < 4; i++) {
+        const container = document.createElement('div')
+        container.className = 'video-container'
+
+        const video = document.createElement('video')
+        video.autoplay = true
+
+        const countdown = document.createElement('div')
+        countdown.className = 'countdown'
+
+        container.appendChild(video)
+        container.appendChild(countdown)
+        videosContainer.appendChild(container)
+
+        videos.push({ video, countdown, container })
+
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then((stream) => (video.srcObject = stream))
+          .catch(() => alert('Camera access denied!'))
+
+        video.addEventListener('click', () =>
+          capturePhoto(video, countdown, container)
+        )
+
+        container.addEventListener('dragover', (e) => e.preventDefault())
+        container.addEventListener('drop', (e) => {
+          e.preventDefault()
+          const src = e.dataTransfer.getData('text')
+          const img = document.createElement('img')
+          img.src = src
+          img.className = 'sticker'
+          img.style.position = 'absolute'
+          img.style.left = e.offsetX - 25 + 'px'
+          img.style.top = e.offsetY - 25 + 'px'
+          img.style.width = '55px'
+          img.style.height = '55px'
+          img.style.objectFit = 'contain'
+
+          // Remove sticker on click
+          img.addEventListener('dblclick', () => img.remove())
+
+          container.appendChild(img)
+          makeDraggable(img)
+        })
+      }
+
+      const stickers = document.querySelectorAll('.stickers img')
+      for (let i = 0; i < stickers.length; i++) {
+        stickers[i].addEventListener('dragstart', (e) =>
+          e.dataTransfer.setData('text', e.target.src)
+        )
+      }
+
+      const makeDraggable = (el) => {
+        el.onmousedown = (e) => {
+          e.preventDefault()
+          const shiftX = e.clientX - el.getBoundingClientRect().left
+          const shiftY = e.clientY - el.getBoundingClientRect().top
+
+          const moveAt = (pageX, pageY) => {
+            const parent = el.parentElement.getBoundingClientRect()
+            let x = pageX - parent.left - shiftX
+            let y = pageY - parent.top - shiftY
+            x = Math.max(0, Math.min(x, parent.width - el.offsetWidth))
+            y = Math.max(0, Math.min(y, parent.height - el.offsetHeight))
+            el.style.left = x + 'px'
+            el.style.top = y + 'px'
+          }
+
+          const onMouseMove = (event) => moveAt(event.pageX, event.pageY)
+          document.addEventListener('mousemove', onMouseMove)
+          document.onmouseup = () => {
+            document.removeEventListener('mousemove', onMouseMove)
+            document.onmouseup = null
+          }
+        }
+        el.ondragstart = () => false
+      }
+
+      const capturePhoto = (video, countdown, container) => {
+        let count = 3
+        countdown.innerText = count
+
+        const timer = setInterval(() => {
+          count--
+          if (count > 0) {
+            countdown.innerText = count
+          } else {
+            clearInterval(timer)
+            countdown.innerText = ''
+
+            const canvas = document.createElement('canvas')
+            canvas.width = video.videoWidth
+            canvas.height = video.videoHeight
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+            const img = document.createElement('img')
+            img.src = canvas.toDataURL('image/png')
+            img.className = 'captured'
+            container.appendChild(img)
+          }
+        }, 1000)
+      }
+      captureButton.addEventListener('click', () => {
+        for (const v of videos) {
+          const captured = v.container.querySelector('.captured')
+          if (captured) {
+            captured.remove()
+            v.video.style.display = 'block' // Show video again
+          } else {
+            // Start countdown capture
+            capturePhoto(v.video, v.countdown, v.container)
+          }
+        }
+      })
+      saveButton.addEventListener('click', async () => {
+        const scale = 3
+        const containers = videosContainer.querySelectorAll('.video-container')
+
+        const containerRect = videosContainer.getBoundingClientRect()
+        const canvasWidth = containerRect.width * scale
+        const canvasHeight = containerRect.height * scale
+
+        const canvas = document.createElement('canvas')
+        canvas.width = canvasWidth
+        canvas.height = canvasHeight
+        const ctx = canvas.getContext('2d')
+
+        // Flip the whole canvas horizontally
+        ctx.translate(canvasWidth, 0)
+        ctx.scale(-scale, scale) // combine flip + scale
+
+        const loadImage = (src) =>
+          new Promise((resolve) => {
+            const img = new Image()
+            img.src = src
+            img.onload = () => resolve(img)
+          })
+
+        const bgImg = await loadImage('1.png')
+        ctx.save()
+        ctx.translate(videosContainer.offsetWidth, 0)
+        ctx.scale(-1, 1)
+        ctx.drawImage(
+          bgImg,
+          0,
+          0,
+          videosContainer.offsetWidth,
+          videosContainer.offsetHeight
+        )
+        ctx.restore()
+
+        for (const vc of containers) {
+          const vcRect = vc.getBoundingClientRect()
+          const xOffset = vcRect.left - containerRect.left
+          const yOffset = vcRect.top - containerRect.top
+          const w = vcRect.width
+          const h = vcRect.height
+
+          // Draw captured image if exists
+          const captured = vc.querySelector('.captured')
+          if (captured) {
+            const img = await loadImage(captured.src)
+            ctx.drawImage(img, xOffset, yOffset, w, h)
+          } else {
+            // Draw live video
+            const video = vc.querySelector('video')
+            if (video) ctx.drawImage(video, xOffset, yOffset, w, h)
+          }
+
+          // Draw stickers flipped horizontally
+          for (const s of vc.querySelectorAll('.sticker')) {
+            const img = await loadImage(s.src)
+
+            // Relative position inside container
+            let sX = s.offsetLeft
+            let sY = s.offsetTop
+            const sW = s.offsetWidth
+            const sH = s.offsetHeight
+
+            ctx.save()
+            // Move to the container's top-left
+            ctx.translate(xOffset, yOffset)
+            // Flip horizontally relative to container
+            ctx.translate(vc.offsetWidth, 0)
+            ctx.scale(-1, 1)
+            ctx.drawImage(img, sX, sY, sW, sH)
+            ctx.restore()
+          }
+        }
+        const messageDiv = document.getElementById('uploadMessage')
+
+        canvas.toBlob(async (blob) => {
+          const link = document.createElement('a')
+          link.download = 'GA_SmileBooth_HQ.png'
+          link.href = URL.createObjectURL(blob)
+          link.click()
+
+          const formData = new FormData()
+          formData.append('image', blob, 'capture.png')
+
+          messageDiv.innerText = 'Uploading...'
+
+          try {
+            const res = await fetch('/upload', {
+              method: 'POST',
+              body: formData
+            })
+            const data = await res.json()
+            if (data.success) {
+              messageDiv.innerText = 'Upload successful!'
+              console.log('Uploaded URL:', data.url)
+            } else {
+              messageDiv.innerText = 'Upload failed!'
+              console.error(data.error)
+            }
+          } catch (err) {
+            messageDiv.innerText = 'Upload failed!'
+            console.error(err)
+          }
+        })
+      })
+    </script>
+  </body>
+</html>
