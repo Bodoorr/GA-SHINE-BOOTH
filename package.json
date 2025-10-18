@@ -1,0 +1,28 @@
+{
+  "name": "ga-shine-booth",
+  "version": "1.0.0",
+  "description": "## Date: 9/10/2025",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bodoorr/GA-SHINE-BOOTH.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bodoorr/GA-SHINE-BOOTH/issues"
+  },
+  "homepage": "https://github.com/Bodoorr/GA-SHINE-BOOTH#readme",
+  "dependencies": {
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}
