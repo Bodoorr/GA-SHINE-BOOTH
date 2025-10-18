@@ -1,7 +1,7 @@
 {
   "name": "ga-shine-booth",
   "version": "1.0.0",
-  "description": "## Date: 9/10/2025",
+  "description": "GA Shine Booth project - 9/10/2025",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -24,6 +24,6 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "multer": "^2.0.2",
-    "ejs": "^3.1.10",
+    "ejs": "^3.1.10"
   }
 }
