@@ -75,6 +75,7 @@
 
         uploadInput.addEventListener("change", (e) => {
           const file = e.target.files[0];
+          console.log("File size:", file.size / 1024 / 1024, "MB");
 
           if (!file) return;
 
