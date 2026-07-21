@@ -264,7 +264,7 @@
         });
       });
       saveButton.addEventListener("click", async () => {
-        const scale = 3;
+        const scale = window.innerWidth < 768 ? 1.5 : 3;
         const containers = videosContainer.querySelectorAll(".video-container");
 
         const containerRect = videosContainer.getBoundingClientRect();
@@ -354,35 +354,40 @@
         }
         const messageDiv = document.getElementById("uploadMessage");
 
-        canvas.toBlob(async (blob) => {
-          const link = document.createElement("a");
-          link.download = "GA_SmileBooth_HQ.png";
-          link.href = URL.createObjectURL(blob);
-          link.click();
+        canvas.toBlob(
+          async (blob) => {
+            console.log("Blob size:", blob.size / 1024 / 1024, "MB");
+            const link = document.createElement("a");
+            link.download = "GA_SmileBooth_HQ.png";
+            link.href = URL.createObjectURL(blob);
+            link.click();
 
-          const formData = new FormData();
-          formData.append("image", blob, "capture.png");
+            const formData = new FormData();
+            formData.append("image", blob, "capture.png");
 
-          messageDiv.innerText = "Uploading...";
+            messageDiv.innerText = "Uploading...";
 
-          try {
-            const res = await fetch("/upload", {
-              method: "POST",
-              body: formData,
-            });
-            const data = await res.json();
-            if (data.success) {
-              messageDiv.innerText = "Upload successful!";
-              console.log("Uploaded URL:", data.url);
-            } else {
+            try {
+              const res = await fetch("/upload", {
+                method: "POST",
+                body: formData,
+              });
+              const data = await res.json();
+              if (data.success) {
+                messageDiv.innerText = "Upload successful!";
+                console.log("Uploaded URL:", data.url);
+              } else {
+                messageDiv.innerText = "Upload failed!";
+                console.error(data.error);
+              }
+            } catch (err) {
               messageDiv.innerText = "Upload failed!";
-              console.error(data.error);
+              console.error(err);
             }
-          } catch (err) {
-            messageDiv.innerText = "Upload failed!";
-            console.error(err);
-          }
-        });
+          },
+          "image/jpeg",
+          0.8,
+        );
       });
     </script>
   </body>
