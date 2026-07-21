@@ -37,236 +37,353 @@
     </div>
 
     <script>
-      const videosContainer = document.querySelector('.videos')
-      const captureButton = document.querySelector('#capture')
-      const saveButton = document.querySelector('#save')
+      const videosContainer = document.querySelector(".videos");
+      const captureButton = document.querySelector("#capture");
+      const saveButton = document.querySelector("#save");
 
-      const videos = []
+      const videos = [];
+      let selectedSticker = null;
 
       for (let i = 0; i < 4; i++) {
-        const container = document.createElement('div')
-        container.className = 'video-container'
+        const container = document.createElement("div");
+        container.className = "video-container";
 
-        const video = document.createElement('video')
-        video.autoplay = true
+        const video = document.createElement("video");
+        video.autoplay = true;
 
-        const countdown = document.createElement('div')
-        countdown.className = 'countdown'
+        const countdown = document.createElement("div");
+        countdown.className = "countdown";
 
-        container.appendChild(video)
-        container.appendChild(countdown)
-        videosContainer.appendChild(container)
+        container.appendChild(video);
+        container.appendChild(countdown);
 
-        videos.push({ video, countdown, container })
+        const uploadInput = document.createElement("input");
+
+        uploadInput.type = "file";
+        uploadInput.accept = "image/jpeg,image/png,image/webp";
+        uploadInput.className = "upload-input";
+
+        const uploadButton = document.createElement("button");
+
+        uploadButton.innerHTML =
+          '<img src="upload.png" alt="Upload" class="icon">';
+        uploadButton.className = "upload-button";
+
+        uploadButton.addEventListener("click", () => {
+          uploadInput.click();
+        });
+
+        uploadInput.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+
+          if (!file) return;
+
+          const imageURL = URL.createObjectURL(file);
+
+          video.style.display = "none";
+
+          const oldImage = container.querySelector(".uploaded-image");
+
+          if (oldImage) {
+            oldImage.remove();
+          }
+          const oldCaptured = container.querySelector(".captured");
+
+          if (oldCaptured) {
+            oldCaptured.remove();
+          }
+          const img = document.createElement("img");
+
+          img.src = imageURL;
+
+          img.className = "uploaded-image";
+          uploadButton.style.display = "none";
+          removeButton.style.display = "flex";
+          container.appendChild(img);
+        });
+
+        container.appendChild(uploadButton);
+        container.appendChild(uploadInput);
+
+        const removeButton = document.createElement("button");
+        removeButton.innerHTML =
+          '<img src="remove.png" alt="Upload" class="icon">';
+        removeButton.className = "remove-button";
+        removeButton.style.display = "none";
+
+        removeButton.addEventListener("click", () => {
+          const uploadedImage = container.querySelector(".uploaded-image");
+
+          if (uploadedImage) {
+            uploadedImage.remove();
+          }
+
+          video.style.display = "block";
+          uploadButton.style.display = "flex";
+          removeButton.style.display = "none";
+        });
+
+        container.appendChild(removeButton);
+
+        videosContainer.appendChild(container);
+
+        videos.push({ video, countdown, container });
 
         navigator.mediaDevices
           .getUserMedia({ video: true })
           .then((stream) => (video.srcObject = stream))
-          .catch(() => alert('Camera access denied!'))
+          .catch(() => alert("Camera access denied!"));
 
-        video.addEventListener('click', () =>
-          capturePhoto(video, countdown, container)
-        )
+        video.addEventListener("click", () =>
+          capturePhoto(video, countdown, container),
+        );
 
-        container.addEventListener('dragover', (e) => e.preventDefault())
-        container.addEventListener('drop', (e) => {
-          e.preventDefault()
-          const src = e.dataTransfer.getData('text')
-          const img = document.createElement('img')
-          img.src = src
-          img.className = 'sticker'
-          img.style.position = 'absolute'
-          img.style.left = e.offsetX - 25 + 'px'
-          img.style.top = e.offsetY - 25 + 'px'
-          img.style.width = '55px'
-          img.style.height = '55px'
-          img.style.objectFit = 'contain'
+        container.addEventListener("pointerup", (e) => {
+          if (!selectedSticker) return;
 
-          // Remove sticker on click
-          img.addEventListener('dblclick', () => img.remove())
+          const rect = container.getBoundingClientRect();
 
-          container.appendChild(img)
-          makeDraggable(img)
-        })
+          const img = document.createElement("img");
+
+          img.src = selectedSticker;
+          img.className = "sticker";
+
+          img.style.position = "absolute";
+          img.style.width = "55px";
+          img.style.height = "55px";
+          img.style.objectFit = "contain";
+
+          img.style.left = e.clientX - rect.left - 25 + "px";
+
+          img.style.top = e.clientY - rect.top - 25 + "px";
+
+          img.addEventListener("dblclick", () => img.remove());
+
+          container.appendChild(img);
+
+          makeDraggable(img);
+
+          selectedSticker = null;
+        });
       }
 
-      const stickers = document.querySelectorAll('.stickers img')
-      for (let i = 0; i < stickers.length; i++) {
-        stickers[i].addEventListener('dragstart', (e) =>
-          e.dataTransfer.setData('text', e.target.src)
-        )
-      }
+      const stickers = document.querySelectorAll(".stickers img");
+
+      stickers.forEach((sticker) => {
+        sticker.addEventListener("pointerdown", () => {
+          selectedSticker = sticker.src;
+        });
+      });
 
       const makeDraggable = (el) => {
-        el.onmousedown = (e) => {
-          e.preventDefault()
-          const shiftX = e.clientX - el.getBoundingClientRect().left
-          const shiftY = e.clientY - el.getBoundingClientRect().top
+        let startX;
+        let startY;
 
-          const moveAt = (pageX, pageY) => {
-            const parent = el.parentElement.getBoundingClientRect()
-            let x = pageX - parent.left - shiftX
-            let y = pageY - parent.top - shiftY
-            x = Math.max(0, Math.min(x, parent.width - el.offsetWidth))
-            y = Math.max(0, Math.min(y, parent.height - el.offsetHeight))
-            el.style.left = x + 'px'
-            el.style.top = y + 'px'
-          }
+        let startLeft;
+        let startTop;
 
-          const onMouseMove = (event) => moveAt(event.pageX, event.pageY)
-          document.addEventListener('mousemove', onMouseMove)
-          document.onmouseup = () => {
-            document.removeEventListener('mousemove', onMouseMove)
-            document.onmouseup = null
-          }
-        }
-        el.ondragstart = () => false
-      }
+        el.style.touchAction = "none";
+
+        el.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+
+          startX = e.clientX;
+          startY = e.clientY;
+
+          startLeft = parseFloat(el.style.left);
+          startTop = parseFloat(el.style.top);
+
+          const move = (event) => {
+            const parent = el.parentElement.getBoundingClientRect();
+
+            let x = startLeft + (event.clientX - startX);
+
+            let y = startTop + (event.clientY - startY);
+
+            x = Math.max(0, Math.min(x, parent.width - el.offsetWidth));
+
+            y = Math.max(0, Math.min(y, parent.height - el.offsetHeight));
+
+            el.style.left = x + "px";
+            el.style.top = y + "px";
+          };
+
+          const stop = () => {
+            document.removeEventListener("pointermove", move);
+
+            document.removeEventListener("pointerup", stop);
+          };
+
+          document.addEventListener("pointermove", move);
+
+          document.addEventListener("pointerup", stop);
+        });
+      };
 
       const capturePhoto = (video, countdown, container) => {
-        let count = 3
-        countdown.innerText = count
+        let count = 3;
+        countdown.innerText = count;
 
         const timer = setInterval(() => {
-          count--
+          count--;
           if (count > 0) {
-            countdown.innerText = count
+            countdown.innerText = count;
           } else {
-            clearInterval(timer)
-            countdown.innerText = ''
+            clearInterval(timer);
+            countdown.innerText = "";
 
-            const canvas = document.createElement('canvas')
-            canvas.width = video.videoWidth
-            canvas.height = video.videoHeight
-            const ctx = canvas.getContext('2d')
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const img = document.createElement('img')
-            img.src = canvas.toDataURL('image/png')
-            img.className = 'captured'
-            container.appendChild(img)
+            const img = document.createElement("img");
+            const uploaded = container.querySelector(".uploaded-image");
+
+            if (uploaded) {
+              uploaded.remove();
+            }
+            img.src = canvas.toDataURL("image/png");
+            img.className = "captured";
+            container.appendChild(img);
           }
-        }, 1000)
-      }
-      captureButton.addEventListener('click', () => {
-        for (const v of videos) {
-          const captured = v.container.querySelector('.captured')
+        }, 1000);
+      };
+      captureButton.addEventListener("click", () => {
+        videos.forEach((v) => {
+          const captured = v.container.querySelector(".captured");
+
           if (captured) {
-            captured.remove()
-            v.video.style.display = 'block' // Show video again
+            captured.remove();
+            v.video.style.display = "block";
           } else {
-            // Start countdown capture
-            capturePhoto(v.video, v.countdown, v.container)
+            capturePhoto(v.video, v.countdown, v.container);
           }
-        }
-      })
-      saveButton.addEventListener('click', async () => {
-        const scale = 3
-        const containers = videosContainer.querySelectorAll('.video-container')
+        });
+      });
+      saveButton.addEventListener("click", async () => {
+        const scale = 3;
+        const containers = videosContainer.querySelectorAll(".video-container");
 
-        const containerRect = videosContainer.getBoundingClientRect()
-        const canvasWidth = containerRect.width * scale
-        const canvasHeight = containerRect.height * scale
+        const containerRect = videosContainer.getBoundingClientRect();
+        const canvasWidth = containerRect.width * scale;
+        const canvasHeight = containerRect.height * scale;
 
-        const canvas = document.createElement('canvas')
-        canvas.width = canvasWidth
-        canvas.height = canvasHeight
-        const ctx = canvas.getContext('2d')
+        const canvas = document.createElement("canvas");
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext("2d");
 
-        // Flip the whole canvas horizontally
-        ctx.translate(canvasWidth, 0)
-        ctx.scale(-scale, scale) // combine flip + scale
+        ctx.translate(canvasWidth, 0);
+        ctx.scale(-scale, scale);
+        const loadImage = async (src) => {
+          const img = new Image();
 
-        const loadImage = (src) =>
-          new Promise((resolve) => {
-            const img = new Image()
-            img.src = src
-            img.onload = () => resolve(img)
-          })
+          img.src = src;
 
-        const bgImg = await loadImage('1.png')
-        ctx.save()
-        ctx.translate(videosContainer.offsetWidth, 0)
-        ctx.scale(-1, 1)
+          await img.decode();
+
+          return img;
+        };
+
+        const bgImg = await loadImage("1.png");
+        ctx.save();
+        ctx.translate(videosContainer.offsetWidth, 0);
+        ctx.scale(-1, 1);
         ctx.drawImage(
           bgImg,
           0,
           0,
           videosContainer.offsetWidth,
-          videosContainer.offsetHeight
-        )
-        ctx.restore()
+          videosContainer.offsetHeight,
+        );
+        ctx.restore();
 
-        for (const vc of containers) {
-          const vcRect = vc.getBoundingClientRect()
-          const xOffset = vcRect.left - containerRect.left
-          const yOffset = vcRect.top - containerRect.top
-          const w = vcRect.width
-          const h = vcRect.height
+        for (let i = 0; i < containers.length; i++) {
+          const vc = containers[i];
 
-          // Draw captured image if exists
-          const captured = vc.querySelector('.captured')
-          if (captured) {
-            const img = await loadImage(captured.src)
-            ctx.drawImage(img, xOffset, yOffset, w, h)
+          const vcRect = vc.getBoundingClientRect();
+          const xOffset = vcRect.left - containerRect.left;
+          const yOffset = vcRect.top - containerRect.top;
+          const w = vcRect.width;
+          const h = vcRect.height;
+
+          const uploaded = vc.querySelector(".uploaded-image");
+          const captured = vc.querySelector(".captured");
+
+          if (uploaded) {
+            const img = await loadImage(uploaded.src);
+
+            ctx.save();
+            ctx.translate(xOffset + w, yOffset);
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, 0, 0, w, h);
+            ctx.restore();
+          } else if (captured) {
+            const img = await loadImage(captured.src);
+            ctx.drawImage(img, xOffset, yOffset, w, h);
           } else {
-            // Draw live video
-            const video = vc.querySelector('video')
-            if (video) ctx.drawImage(video, xOffset, yOffset, w, h)
+            const video = vc.querySelector("video");
+
+            if (video) {
+              ctx.drawImage(video, xOffset, yOffset, w, h);
+            }
           }
 
-          // Draw stickers flipped horizontally
-          for (const s of vc.querySelectorAll('.sticker')) {
-            const img = await loadImage(s.src)
+          const stickers = vc.querySelectorAll(".sticker");
 
-            // Relative position inside container
-            let sX = s.offsetLeft
-            let sY = s.offsetTop
-            const sW = s.offsetWidth
-            const sH = s.offsetHeight
+          for (let i = 0; i < stickers.length; i++) {
+            const sticker = stickers[i];
 
-            ctx.save()
-            // Move to the container's top-left
-            ctx.translate(xOffset, yOffset)
-            // Flip horizontally relative to container
-            ctx.translate(vc.offsetWidth, 0)
-            ctx.scale(-1, 1)
-            ctx.drawImage(img, sX, sY, sW, sH)
-            ctx.restore()
+            const img = await loadImage(sticker.src);
+
+            const sX = sticker.offsetLeft;
+            const sY = sticker.offsetTop;
+            const sW = sticker.offsetWidth;
+            const sH = sticker.offsetHeight;
+
+            ctx.save();
+            ctx.translate(xOffset, yOffset);
+            ctx.translate(vc.offsetWidth, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, sX, sY, sW, sH);
+            ctx.restore();
           }
         }
-        const messageDiv = document.getElementById('uploadMessage')
+        const messageDiv = document.getElementById("uploadMessage");
 
         canvas.toBlob(async (blob) => {
-          const link = document.createElement('a')
-          link.download = 'GA_SmileBooth_HQ.png'
-          link.href = URL.createObjectURL(blob)
-          link.click()
+          const link = document.createElement("a");
+          link.download = "GA_SmileBooth_HQ.png";
+          link.href = URL.createObjectURL(blob);
+          link.click();
 
-          const formData = new FormData()
-          formData.append('image', blob, 'capture.png')
+          const formData = new FormData();
+          formData.append("image", blob, "capture.png");
 
-          messageDiv.innerText = 'Uploading...'
+          messageDiv.innerText = "Uploading...";
 
           try {
-            const res = await fetch('/upload', {
-              method: 'POST',
-              body: formData
-            })
-            const data = await res.json()
+            const res = await fetch("/upload", {
+              method: "POST",
+              body: formData,
+              enctype: "multipart/form-data",
+            });
+            const data = await res.json();
             if (data.success) {
-              messageDiv.innerText = 'Upload successful!'
-              console.log('Uploaded URL:', data.url)
+              messageDiv.innerText = "Upload successful!";
+              console.log("Uploaded URL:", data.url);
             } else {
-              messageDiv.innerText = 'Upload failed!'
-              console.error(data.error)
+              messageDiv.innerText = "Upload failed!";
+              console.error(data.error);
             }
           } catch (err) {
-            messageDiv.innerText = 'Upload failed!'
-            console.error(err)
+            messageDiv.innerText = "Upload failed!";
+            console.error(err);
           }
-        })
-      })
+        });
+      });
     </script>
   </body>
 </html>
