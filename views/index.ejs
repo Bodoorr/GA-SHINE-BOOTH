@@ -357,10 +357,13 @@
         canvas.toBlob(
           async (blob) => {
             console.log("Blob size:", blob.size / 1024 / 1024, "MB");
+            const link = document.createElement("a");
+            link.download = "GA_SmileBooth_HQ.png";
+            link.href = URL.createObjectURL(blob);
+            link.click();
 
             const formData = new FormData();
-
-            formData.append("image", blob, "capture.jpg");
+            formData.append("image", blob, "capture.png");
 
             messageDiv.innerText = "Uploading...";
 
@@ -369,11 +372,13 @@
                 method: "POST",
                 body: formData,
               });
-
               const data = await res.json();
-
-              console.log(data);
+              if (data.success) {
+                messageDiv.innerText = "Upload successful!";
+                console.log("Uploaded URL:", data.url);
+              }
             } catch (err) {
+              messageDiv.innerText = "Upload failed!";
               console.error(err);
             }
           },
