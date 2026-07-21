@@ -38,6 +38,6 @@ exports.uploadPhoto = (req, res) => {
     console.error("Upload stream error:", error);
   });
 
-  uploadStream.end(req.file.buffer);
   console.log("Sending to Cloudinary...");
+  uploadStream.end(req.file.buffer);
 };
