@@ -1,43 +1,21 @@
 const cloudinary = require("../config/cloudinary");
 
 exports.uploadPhoto = (req, res) => {
-  console.log("File received:", req.file);
+  if (!req.file)
+    return res
+      .status(400)
+      .json({ success: false, message: "No file uploaded" });
 
-  if (!req.file) {
-    return res.status(400).json({
-      success: false,
-      message: "No file uploaded",
-    });
-  }
-
-  const uploadStream = cloudinary.uploader.upload_stream(
-    {
-      folder: "ga_shine_booth",
-      resource_type: "image",
-    },
+  const stream = cloudinary.uploader.upload_stream(
+    { folder: "ga_shine_booth" },
     (error, result) => {
       if (error) {
-        console.error("Cloudinary error:", error);
-
-        return res.status(500).json({
-          success: false,
-          error: error.message,
-        });
+        console.error(error);
+        return res.status(500).json({ success: false, error: error.message });
       }
-
-      console.log("Cloudinary success:", result.secure_url);
-
-      return res.json({
-        success: true,
-        url: result.secure_url,
-      });
+      res.json({ success: true, url: result.secure_url });
     },
   );
 
-  uploadStream.on("error", (error) => {
-    console.error("Upload stream error:", error);
-  });
-
-  console.log("Sending to Cloudinary...");
-  uploadStream.end(req.file.buffer);
+  stream.end(req.file.buffer);
 };
