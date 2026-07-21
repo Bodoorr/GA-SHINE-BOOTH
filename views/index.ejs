@@ -369,7 +369,6 @@
             const res = await fetch("/upload", {
               method: "POST",
               body: formData,
-              enctype: "multipart/form-data",
             });
             const data = await res.json();
             if (data.success) {
