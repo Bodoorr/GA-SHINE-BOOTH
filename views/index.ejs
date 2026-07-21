@@ -264,7 +264,7 @@
         });
       });
       saveButton.addEventListener("click", async () => {
-        const scale = window.innerWidth < 768 ? 1.5 : 3;
+        const scale = 3;
         const containers = videosContainer.querySelectorAll(".video-container");
 
         const containerRect = videosContainer.getBoundingClientRect();
@@ -354,49 +354,41 @@
         }
         const messageDiv = document.getElementById("uploadMessage");
 
-        canvas.toBlob(
-          async (blob) => {
-            console.log(
-              "Blob size:",
-              (blob.size / 1024 / 1024).toFixed(2),
-              "MB",
-            );
+        canvas.toBlob(async (blob) => {
+          console.log("Blob size:", (blob.size / 1024 / 1024).toFixed(2), "MB");
 
-            const formData = new FormData();
-            formData.append("image", blob, "capture.jpg");
+          const formData = new FormData();
+          formData.append("image", blob, "capture.png");
 
-            messageDiv.innerText = "Uploading...";
+          messageDiv.innerText = "Uploading...";
 
-            try {
-              const res = await fetch("/upload", {
-                method: "POST",
-                body: formData,
-              });
+          try {
+            const res = await fetch("/upload", {
+              method: "POST",
+              body: formData,
+            });
 
-              const data = await res.json();
+            const data = await res.json();
 
-              if (data.success) {
-                messageDiv.innerText = "Upload successful!";
-                console.log("Uploaded URL:", data.url);
+            if (data.success) {
+              messageDiv.innerText = "Upload successful!";
+              console.log("Uploaded URL:", data.url);
 
-                const link = document.createElement("a");
-                link.download = "GA_SmileBooth_HQ.jpg";
-                link.href = URL.createObjectURL(blob);
-                link.click();
+              const link = document.createElement("a");
+              link.download = "GA_SmileBooth_HQ.png";
+              link.href = URL.createObjectURL(blob);
+              link.click();
 
-                URL.revokeObjectURL(link.href);
-              } else {
-                messageDiv.innerText = "Upload failed!";
-                console.error(data.error);
-              }
-            } catch (err) {
+              URL.revokeObjectURL(link.href);
+            } else {
               messageDiv.innerText = "Upload failed!";
-              console.error(err);
+              console.error(data.error);
             }
-          },
-          "image/jpeg",
-          0.8,
-        );
+          } catch (err) {
+            messageDiv.innerText = "Upload failed!";
+            console.error(err);
+          }
+        });
       });
     </script>
   </body>
